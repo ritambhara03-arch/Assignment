@@ -1,0 +1,54 @@
+name: Node.js CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+      run: npm test
+
+      - name: Build Docker image
+        run: |
+          docker build -t my-node-app:latest .
+          docker push my-node-app:latest
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl apply -f deployment.yaml
+
+      - name: Send notification
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { context, github } = actions;
+            const deploymentStatus = 'success'; // Replace with actual status
+
+            github.rest.repos.createDispatchEvent({
+             owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: 'deployment_status',
+              client_payload: {
+                status: deploymentStatus
+              }
+            });
+
+
+
+     
